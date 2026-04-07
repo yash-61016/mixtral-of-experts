@@ -1,10 +1,20 @@
 # Mixtral of Experts - Artifacts
 
-From-scratch implementation and experiment artifact for [Mixtral of Experts](https://arxiv.org/abs/2401.04088).
+From-scratch implementation and experiment artifacts for [Mixtral of Experts](https://arxiv.org/abs/2401.04088).
 
 Accompanies the write-up: [Mixtral of Experts: Top-2 Routing Gives 47B Capacity at 13B Active Compute](https://yashpatel.xyz/blog/mixtral-of-experts-top-2-routing-gives-47b-capacity-at-13b-active-compute)
 
 ---
+
+## What this repository demonstrates
+
+This repo turns the blog post’s core claims into runnable experiments and reusable code:
+
+- **Top-2 sparse routing in practice**: `moe_core.py` implements token-to-expert dispatch with `k=2` routing, SwiGLU experts, and router probability tracking.
+- **Capacity vs active compute framing**: the MoE model keeps multiple experts available while only activating a subset per token, mirroring the blog’s “large capacity, lower active compute” theme.
+- **Compute-matched comparison**: `mixtral_isoflop_race.py` compares dense vs sparse models under a shared cumulative FLOP budget rather than fixed step count.
+- **Router-behavior diagnostics**: `mixtral_router_balance.py` quantifies entropy, top-1 concentration, and expert usage with and without auxiliary balancing loss.
+- **Reproducible artifact outputs**: the repository includes generated CSV metrics and plots that map directly to these experiment questions.
 
 ## Files
 
@@ -70,6 +80,28 @@ Both scripts write outputs to `outputs/`.
 
 ---
 
+## Visual highlights from this repository
+
+### 1) Dense vs MoE at matched FLOPs
+
+![Train loss vs cumulative FLOPs](./isoflop_train_loss.png)
+
+![Validation perplexity vs cumulative FLOPs](./isoflop_val_perplexity.png)
+
+These plots summarize the FLOP-budgeted race implemented in `mixtral_isoflop_race.py`: both models are evaluated at comparable cumulative compute checkpoints, making the endpoint comparison compute-fair.
+
+### 2) Router balancing behavior with auxiliary loss
+
+![Router entropy over training](./router_entropy_over_training.png)
+
+![Expert usage heatmap without auxiliary loss](./expert_usage_heatmap_no_aux.png)
+
+![Expert usage heatmap with auxiliary loss](./expert_usage_heatmap_with_aux.png)
+
+These diagnostics come from `mixtral_router_balance.py` and show how adding auxiliary balancing shifts routing statistics (higher entropy, lower concentration) while keeping language-model quality in a similar range at smoke scale.
+
+---
+
 ## Key Finding
 
 At nearly equal cumulative training FLOPs, sparse MoE achieves lower validation perplexity than dense in this artifact setup.
@@ -89,3 +121,11 @@ Additional router-balance observation from the paired run:
 - with auxiliary loss, entropy rises (2.0596 vs 2.0276)
 - top-1 concentration drops (0.1759 vs 0.1822)
 - validation perplexity is similar in this smoke-scale setting
+
+## Code-level implementation notes
+
+- `MoEFeedForward` performs explicit top-k dispatch and weighted expert aggregation per token.
+- `estimate_step_flops` includes attention, active FFN compute, router overhead, and backward multiplier so script-level budgets are comparable.
+- `auxiliary_load_balancing_loss` follows a Switch-style top-1 balancing objective using average dispatch and average router probabilities.
+- `ExpertUsageTracker` supports both cumulative and windowed expert-frequency analysis used for entropy and heatmap plotting.
+- `test_moe_core.py` validates FLOP formulas, auxiliary-loss behavior, usage tracking, and deterministic data sampling.
