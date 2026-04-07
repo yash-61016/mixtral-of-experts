@@ -1,6 +1,6 @@
 # Mixtral of Experts - Artifacts
 
-From-scratch implementation and experiment artifact for [Mixtral of Experts](https://arxiv.org/abs/2401.04088).
+From-scratch implementation and experiment artifacts for [Mixtral of Experts](https://arxiv.org/abs/2401.04088).
 
 Accompanies the write-up: [Mixtral of Experts: Top-2 Routing Gives 47B Capacity at 13B Active Compute](https://yashpatel.xyz/blog/mixtral-of-experts-top-2-routing-gives-47b-capacity-at-13b-active-compute)
 
